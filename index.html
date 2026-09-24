@@ -1,0 +1,570 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AulaMind Gravador</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Gravador">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#0F7B6C">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="manifest" href="manifest.webmanifest">
+<style>
+:root{
+  --bg:#F2F5F3; --surface:#FFFFFF; --surface-2:#E7ECE9; --ink:#15201C; --muted:#5E6B66;
+  --line:#D5DDD9; --accent:#0F7B6C; --accent-ink:#FFFFFF; --rec:#D2443B; --rec-soft:#FBE7E5;
+  --warn:#9A5B00; --warn-soft:#FFF1D9; --interim:#8A9792;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0D1311; --surface:#161E1B; --surface-2:#202A26; --ink:#E4ECE8; --muted:#9AA8A2;
+    --line:#2A3531; --accent:#3CBFA7; --accent-ink:#06120F; --rec:#FF6258; --rec-soft:#3A1917;
+    --warn:#FFB84D; --warn-soft:#33260F; --interim:#6F7D77;
+    color-scheme: dark;
+  }
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font:16px/1.5 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+  -webkit-text-size-adjust:100%;
+}
+.wrap{max-width:720px; margin:0 auto; padding-inline:16px; padding-block:calc(env(safe-area-inset-top,0px) + 12px) calc(env(safe-area-inset-bottom,0px) + 24px); display:flex; flex-direction:column; gap:16px}
+header{display:flex; align-items:baseline; justify-content:space-between; gap:12px}
+h1{font-size:22px; margin:0; letter-spacing:-.2px}
+h1 small{font-weight:500; color:var(--muted); font-size:14px; margin-left:6px}
+.tabs{display:flex; gap:6px}
+.tab{appearance:none; border:1px solid var(--line); background:var(--surface); color:var(--ink); border-radius:999px; padding:6px 12px; font:inherit; font-size:14px}
+.tab[aria-selected="true"]{background:var(--ink); color:var(--bg); border-color:var(--ink)}
+.card{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:16px; display:flex; flex-direction:column; gap:12px}
+label{font-size:13px; font-weight:600; color:var(--muted); letter-spacing:.2px}
+input[type=text], textarea{
+  width:100%; font:inherit; font-size:17px; color:var(--ink); background:var(--bg);
+  border:1px solid var(--line); border-radius:10px; padding:10px 12px;
+}
+textarea{min-height:50vh; font-size:16px; line-height:1.55}
+.field{display:flex; flex-direction:column; gap:4px}
+.row{display:flex; gap:10px; flex-wrap:wrap}
+.row > *{flex:1 1 140px}
+button{font:inherit}
+.btn{appearance:none; border:0; border-radius:12px; min-height:52px; padding:0 16px; font-size:17px; font-weight:600; background:var(--surface-2); color:var(--ink)}
+.btn.primary{background:var(--accent); color:var(--accent-ink)}
+.btn.danger{background:var(--rec); color:#fff}
+.btn:disabled{opacity:.45}
+.btn:focus-visible,.tab:focus-visible,.rec:focus-visible{outline:3px solid var(--accent); outline-offset:2px}
+.recbar{display:flex; flex-direction:column; align-items:center; gap:10px; padding-block:8px}
+.rec{
+  width:132px; height:132px; border-radius:50%; border:0; background:var(--rec); color:#fff;
+  font-size:17px; font-weight:800; letter-spacing:1.2px; display:flex; align-items:center; justify-content:center; text-align:center;
+  box-shadow:0 0 0 8px var(--rec-soft);
+}
+.rec.on{animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 16px var(--rec-soft)}}
+@media (prefers-reduced-motion: reduce){.rec.on{animation:none}}
+.clock{font:600 40px/1 ui-monospace, "SF Mono", Menlo, monospace; font-variant-numeric:tabular-nums}
+.state{display:flex; align-items:center; gap:8px; font-size:15px; color:var(--muted)}
+.dot{width:10px; height:10px; border-radius:50%; background:var(--muted)}
+.dot.live{background:var(--rec)}
+.dot.warn{background:var(--warn)}
+.notice{border-radius:12px; padding:12px 14px; font-size:15px; background:var(--warn-soft); color:var(--warn)}
+.notice.info{background:var(--surface-2); color:var(--ink)}
+.transcript{display:flex; flex-direction:column; gap:12px; font-size:17px; line-height:1.6}
+.para{display:grid; grid-template-columns:52px 1fr; gap:10px}
+.ts{font:500 13px/1.9 ui-monospace, "SF Mono", Menlo, monospace; color:var(--muted); font-variant-numeric:tabular-nums}
+.gap{grid-column:1 / -1; font-size:13px; color:var(--warn); text-align:center; border-top:1px dashed var(--line); padding-top:6px}
+.interim{color:var(--interim)}
+.empty{color:var(--muted); font-size:15px}
+.meta{font-size:13px; color:var(--muted)}
+.list{display:flex; flex-direction:column; gap:10px}
+.item{display:flex; flex-direction:column; gap:6px}
+.item h3{margin:0; font-size:17px}
+details summary{cursor:pointer; color:var(--accent); font-weight:600}
+details ol{padding-left:20px; margin:8px 0 0; display:flex; flex-direction:column; gap:6px}
+.sticky{position:sticky; bottom:calc(env(safe-area-inset-bottom,0px) + 8px); z-index:2}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Gravador <small>AulaMind</small></h1>
+    <nav class="tabs" role="tablist">
+      <button class="tab" role="tab" id="tab-rec" aria-selected="true">Gravar</button>
+      <button class="tab" role="tab" id="tab-hist" aria-selected="false">Aulas</button>
+    </nav>
+  </header>
+
+  <!-- ============ GRAVAR ============ -->
+  <section id="view-rec" class="stack" style="display:flex;flex-direction:column;gap:16px">
+    <div id="unsupported" class="notice" hidden>
+      Este navegador não oferece reconhecimento de voz. No iPhone, abra este link no <b>Safari</b> e confira em
+      Ajustes › Geral › Teclado se o <b>Ditado</b> está ativado.
+    </div>
+
+    <div class="card">
+      <div class="field">
+        <label for="title">Nome da aula (opcional)</label>
+        <input id="title" type="text" placeholder="Ex.: Farmacologia dos opioides" autocomplete="off">
+      </div>
+      <div class="row">
+        <div class="field">
+          <label for="subject">Disciplina</label>
+          <input id="subject" type="text" placeholder="Ex.: Anestesiologia" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="teacher">Professor</label>
+          <input id="teacher" type="text" placeholder="Ex.: Prof. Silva" autocomplete="off">
+        </div>
+      </div>
+    </div>
+
+    <div class="recbar">
+      <button id="recBtn" class="rec" aria-label="Iniciar gravação">GRAVAR<br>AULA</button>
+      <div class="clock" id="clock" aria-live="off">00:00</div>
+      <div class="state"><span class="dot" id="dot"></span><span id="stateText">Pronto para gravar</span></div>
+      <div class="row" id="liveControls" hidden style="width:100%">
+        <button class="btn" id="pauseBtn">Pausar</button>
+        <button class="btn danger" id="stopBtn">Finalizar</button>
+      </div>
+      <div class="row" id="confirmStop" hidden style="width:100%">
+        <button class="btn" id="keepBtn">Continuar gravando</button>
+        <button class="btn danger" id="confirmStopBtn">Encerrar e salvar</button>
+      </div>
+    </div>
+
+    <div id="alerts" class="list"></div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <strong>Transcrição ao vivo</strong>
+        <span class="meta" id="wordCount">0 palavras</span>
+      </div>
+      <div id="transcript" class="transcript" aria-live="polite">
+        <p class="empty" id="emptyHint">O texto aparece aqui enquanto o professor fala. Tudo é salvo neste aparelho automaticamente.</p>
+      </div>
+    </div>
+
+    <details class="card">
+      <summary>Antes da primeira aula</summary>
+      <ol>
+        <li>Use o <b>Safari</b>. Toque em Compartilhar › <b>Adicionar à Tela de Início</b> para ter o ícone. Se o reconhecimento falhar pelo ícone, abra pelo Safari.</li>
+        <li>Ative o <b>Ditado</b>: Ajustes › Geral › Teclado › Ativar Ditado.</li>
+        <li>Na primeira gravação, permita o <b>Microfone</b> e o <b>Reconhecimento de Fala</b>.</li>
+        <li>Durante a aula, mantenha esta tela aberta. O app tenta impedir que ela apague; se apagar, ajuste Tela e Brilho › Bloqueio Automático › Nunca (e volte depois).</li>
+        <li>Peça autorização ao professor para gravar. O reconhecimento de voz do iPhone é processado pela Apple.</li>
+      </ol>
+    </details>
+  </section>
+
+  <!-- ============ AULAS ============ -->
+  <section id="view-hist" hidden style="display:flex;flex-direction:column;gap:16px">
+    <div id="histList" class="list"></div>
+  </section>
+
+  <!-- ============ DETALHE ============ -->
+  <section id="view-detail" hidden style="display:flex;flex-direction:column;gap:16px">
+    <button class="btn" id="backBtn">‹ Voltar para Aulas</button>
+    <div class="card">
+      <h2 id="dTitle" style="margin:0;font-size:20px"></h2>
+      <div class="meta" id="dMeta"></div>
+      <div class="row">
+        <button class="btn primary" id="shareBtn">Enviar para o Claude</button>
+        <button class="btn" id="copyBtn">Copiar texto</button>
+      </div>
+      <div class="notice info" id="copyInfo" hidden></div>
+      <p class="meta" style="margin:0">Cole no AulaMind (no Claude) para gerar tópicos, resumão e flashcards.</p>
+    </div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <strong>Transcrição</strong>
+        <button class="btn" id="editBtn" style="min-height:40px">Editar</button>
+      </div>
+      <div id="dTranscript" class="transcript"></div>
+      <textarea id="dEditor" hidden aria-label="Editar transcrição"></textarea>
+      <div class="row" id="editActions" hidden>
+        <button class="btn" id="cancelEditBtn">Cancelar</button>
+        <button class="btn primary" id="saveEditBtn">Salvar edição</button>
+      </div>
+    </div>
+    <div class="row" id="delRow">
+      <button class="btn" id="delBtn">Excluir esta aula</button>
+    </div>
+    <div class="row" id="delConfirm" hidden>
+      <button class="btn" id="delCancel">Manter</button>
+      <button class="btn danger" id="delYes">Excluir definitivamente</button>
+    </div>
+  </section>
+</div>
+
+<script>
+"use strict";
+/* ---------------------------------------------------------------
+   AulaMind Gravador — transcrição ao vivo com o reconhecimento de
+   voz do próprio iPhone (Web Speech API). Sem servidor, sem custo.
+   Os dados ficam só neste aparelho (localStorage).
+---------------------------------------------------------------- */
+const $ = (id) => document.getElementById(id);
+const STORE_KEY = "aulamind.gravador.v1";
+const PARA_GAP_MS = 5000;     // silêncio que abre novo parágrafo
+const PARA_MAX_CHARS = 450;   // tamanho máximo de um parágrafo
+
+// ---------- armazenamento ----------
+function loadAll(){ try{ return JSON.parse(localStorage.getItem(STORE_KEY)) || {sessions:[]}; }catch{ return {sessions:[]}; } }
+function saveAll(db){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(db)); return true; }catch(e){ showAlert("Não foi possível salvar no aparelho (armazenamento cheio?). Copie o texto agora para não perder.", "warn"); return false; } }
+let db = loadAll();
+function upsertSession(s){
+  const i = db.sessions.findIndex(x => x.id === s.id);
+  if (i >= 0) db.sessions[i] = s; else db.sessions.unshift(s);
+  saveAll(db);
+}
+
+// ---------- formatação ----------
+function clock(ms){
+  const t = Math.max(0, Math.floor(ms/1000)), h = Math.floor(t/3600), m = Math.floor(t%3600/60), s = t%60;
+  const mm = String(m).padStart(2,"0"), ss = String(s).padStart(2,"0");
+  return h ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
+}
+function fmtDate(iso){ return new Date(iso).toLocaleString("pt-BR",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"}); }
+function words(s){ return s.paras.reduce((n,p)=> n + (p.text ? p.text.trim().split(/\s+/).filter(Boolean).length : 0), 0); }
+function sessionTitle(s){ return s.title?.trim() || `Aula de ${fmtDate(s.startedAt)}`; }
+function bodyText(s){
+  return s.edited != null ? s.edited : s.paras.map(p => p.gap ? `[${clock(p.t)}] [pausa: ${p.gap}]` : `[${clock(p.t)}] ${p.text.trim()}`).join("\n\n");
+}
+function toPlainText(s){
+  const head = [
+    `AULA: ${sessionTitle(s)}`,
+    s.subject ? `DISCIPLINA: ${s.subject}` : null,
+    s.teacher ? `PROFESSOR: ${s.teacher}` : null,
+    `DATA: ${new Date(s.startedAt).toLocaleString("pt-BR")}`,
+    `DURAÇÃO: ${clock(s.durationMs)}`,
+    `FONTE: transcrição automática do iPhone (pode conter erros; trechos [pausa] indicam interrupções)`,
+    ""
+  ].filter(x => x !== null);
+  return head.join("\n") + "\n" + bodyText(s) + "\n";
+}
+
+// ---------- estado da gravação ----------
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (!SR) $("unsupported").hidden = false;
+
+let rec = null;           // instância do reconhecimento
+let session = null;       // sessão atual
+let phase = "idle";       // idle | recording | paused
+let segStart = 0;         // performance.now() do trecho corrente
+let accMs = 0;            // tempo acumulado antes do trecho corrente
+let lastFinalAt = 0;      // tempo (ms de aula) do último texto final
+let interim = "";
+let restarts = 0;
+let restartTimer = null;
+let tick = null;
+let wakeLock = null;
+let hiddenAt = null;
+
+function elapsed(){ return phase === "recording" ? accMs + (performance.now() - segStart) : accMs; }
+
+function setState(text, kind){ $("stateText").textContent = text; $("dot").className = "dot" + (kind ? " " + kind : ""); }
+
+function showAlert(msg, kind="warn", id){
+  if (id && document.getElementById(id)) return;
+  const el = document.createElement("div");
+  el.className = "notice" + (kind === "info" ? " info" : "");
+  el.textContent = msg; if (id) el.id = id;
+  $("alerts").prepend(el);
+  if (kind === "info") setTimeout(() => el.remove(), 6000);
+}
+function clearAlert(id){ const el = document.getElementById(id); if (el) el.remove(); }
+
+// ---------- tela sempre ligada ----------
+async function keepAwake(){
+  try{
+    if ("wakeLock" in navigator){ wakeLock = await navigator.wakeLock.request("screen"); clearAlert("wl"); }
+    else showAlert("Este aparelho não permite manter a tela ligada automaticamente. Durante a aula, ajuste Bloqueio Automático para Nunca.", "warn", "wl");
+  }catch{ showAlert("Não consegui manter a tela ligada. Durante a aula, ajuste Ajustes › Tela e Brilho › Bloqueio Automático › Nunca.", "warn", "wl"); }
+}
+function releaseAwake(){ try{ wakeLock?.release(); }catch{} wakeLock = null; }
+
+// ---------- reconhecimento ----------
+function makeRecognizer(){
+  const r = new SR();
+  r.lang = "pt-BR";
+  r.continuous = true;
+  r.interimResults = true;
+  r.maxAlternatives = 1;
+  r.onresult = (ev) => {
+    let tmp = "";
+    for (let i = ev.resultIndex; i < ev.results.length; i++){
+      const res = ev.results[i];
+      if (res.isFinal) addFinal(res[0].transcript);
+      else tmp += res[0].transcript;
+    }
+    interim = tmp;
+    renderLive();
+  };
+  r.onerror = (ev) => {
+    if (ev.error === "no-speech" || ev.error === "aborted") return;
+    if (ev.error === "not-allowed" || ev.error === "service-not-allowed"){
+      showAlert("Sem permissão para o microfone ou o reconhecimento de fala. No iPhone: Ajustes › Safari › Microfone › Permitir, e Ajustes › Geral › Teclado › Ativar Ditado. Depois toque em Continuar.", "warn", "perm");
+      pauseRecording(true);
+      return;
+    }
+    if (ev.error === "network"){
+      showAlert("Sem internet: o reconhecimento de voz do iPhone pode precisar de conexão. Tentando novamente…", "warn", "net");
+      return;
+    }
+    if (ev.error === "audio-capture"){
+      showAlert("O microfone está ocupado ou indisponível (ligação, outro app ou fone desconectado).", "warn", "cap");
+    }
+  };
+  r.onend = () => {
+    // o iOS encerra a sessão de tempos em tempos: religamos sozinhos
+    if (phase !== "recording") return;
+    if (interim.trim()){ addFinal(interim); interim = ""; }
+    clearTimeout(restartTimer);
+    restartTimer = setTimeout(() => {
+      if (phase !== "recording") return;
+      try{ rec.start(); restarts++; clearAlert("net"); armStartWatchdog(); }
+      catch{ needTap(); }
+    }, 250);
+  };
+  r.onstart = () => { clearTimeout(startWatchdog); clearAlert("tap"); setState("Gravando e transcrevendo", "live"); };
+  return r;
+}
+
+let startWatchdog = null;
+// se o iPhone não religar sozinho em 4 s, pedimos um toque (não perdemos o que já foi salvo)
+function armStartWatchdog(){
+  clearTimeout(startWatchdog);
+  startWatchdog = setTimeout(() => { if (phase === "recording") needTap(); }, 4000);
+}
+function needTap(){
+  setState("Reconhecimento parado — toque em Continuar", "warn");
+  showAlert("O iPhone parou o reconhecimento. Toque em Continuar para retomar (o tempo parado fica marcado no texto).", "warn", "tap");
+  pauseRecording(true);
+}
+
+function addFinal(text){
+  const t = text.replace(/\s+/g, " ").trim();
+  if (!t || !session) return;
+  const now = elapsed();
+  const last = session.paras[session.paras.length - 1];
+  const newPara = !last || last.gap || (now - lastFinalAt > PARA_GAP_MS) || (last.text.length > PARA_MAX_CHARS && /[.!?]$/.test(last.text.trim()));
+  if (newPara) session.paras.push({ t: Math.max(0, now - 2000), text: cap(t) });
+  else last.text += (/[.!?]$/.test(last.text.trim()) ? " " + cap(t) : " " + t);
+  lastFinalAt = now;
+  session.durationMs = now;
+  upsertSession(session);
+}
+function cap(s){ return s.charAt(0).toLocaleUpperCase("pt-BR") + s.slice(1); }
+
+// ---------- ações ----------
+async function startRecording(){
+  if (!SR){ $("unsupported").hidden = false; return; }
+  session = {
+    id: "a" + Date.now().toString(36),
+    title: $("title").value.trim(), subject: $("subject").value.trim(), teacher: $("teacher").value.trim(),
+    startedAt: new Date().toISOString(), durationMs: 0, paras: [], edited: null, _pausedReason: null
+  };
+  upsertSession(session);
+  accMs = 0; lastFinalAt = 0; restarts = 0; interim = "";
+  $("transcript").innerHTML = "";
+  await resumeRecording();
+}
+
+async function resumeRecording(){
+  clearAlert("perm"); clearAlert("tap");
+  if (session && accMs > 0){
+    const last = session.paras[session.paras.length - 1];
+    if (last && !last.gap && session._pausedReason) session.paras.push({ t: accMs, gap: session._pausedReason, text: "" });
+    session._pausedReason = null;
+  }
+  rec = rec || makeRecognizer();
+  try{ rec.start(); }catch(e){ /* já iniciado */ }
+  phase = "recording";
+  armStartWatchdog();
+  segStart = performance.now();
+  $("recBtn").classList.add("on");
+  $("recBtn").innerHTML = "GRAVANDO";
+  $("recBtn").setAttribute("aria-label", "Gravando");
+  $("liveControls").hidden = false; $("confirmStop").hidden = true;
+  $("pauseBtn").textContent = "Pausar";
+  setState("Iniciando…", "live");
+  clearInterval(tick); tick = setInterval(() => { $("clock").textContent = clock(elapsed()); }, 250);
+  keepAwake();
+  renderLive();
+}
+
+function pauseRecording(byError){
+  if (phase !== "recording") return;
+  accMs = elapsed();
+  phase = "paused";
+  if (session){ session.durationMs = accMs; session._pausedReason = byError ? "reconhecimento interrompido" : "pausado pelo usuário"; upsertSession(session); }
+  try{ rec?.stop(); }catch{}
+  clearInterval(tick); clearTimeout(startWatchdog);
+  $("recBtn").classList.remove("on");
+  $("recBtn").innerHTML = "CONTINUAR";
+  $("recBtn").setAttribute("aria-label", "Continuar gravação");
+  $("pauseBtn").textContent = "Continuar";
+  if (!byError) setState("Pausado", "warn");
+  releaseAwake();
+}
+
+function finishRecording(){
+  if (phase === "recording") accMs = elapsed();
+  phase = "idle";
+  try{ rec?.stop(); }catch{}
+  rec = null;
+  clearInterval(tick); clearTimeout(restartTimer); clearTimeout(startWatchdog); releaseAwake();
+  if (interim.trim() && session){ addFinal(interim); interim = ""; }
+  if (session){
+    session.durationMs = accMs; delete session._pausedReason; upsertSession(session);
+    const id = session.id; session = null;
+    resetRecUI();
+    openDetail(id);
+    showAlert("Aula salva neste aparelho.", "info");
+  } else resetRecUI();
+}
+
+function resetRecUI(){
+  $("recBtn").classList.remove("on");
+  $("recBtn").innerHTML = "GRAVAR<br>AULA";
+  $("recBtn").setAttribute("aria-label", "Iniciar gravação");
+  $("liveControls").hidden = true; $("confirmStop").hidden = true;
+  $("clock").textContent = "00:00";
+  setState("Pronto para gravar");
+  $("title").value = ""; $("teacher").value = "";
+  $("transcript").innerHTML = '<p class="empty">O texto aparece aqui enquanto o professor fala. Tudo é salvo neste aparelho automaticamente.</p>';
+  $("wordCount").textContent = "0 palavras";
+}
+
+// ---------- renderização ----------
+function paraNode(p, interimText){
+  const row = document.createElement("div");
+  row.className = "para";
+  if (p.gap){
+    const g = document.createElement("div"); g.className = "gap"; g.textContent = `${clock(p.t)} · pausa (${p.gap})`;
+    row.append(g); return row;
+  }
+  const ts = document.createElement("div"); ts.className = "ts"; ts.textContent = clock(p.t);
+  const tx = document.createElement("div"); tx.textContent = p.text;
+  if (interimText){ const i = document.createElement("span"); i.className = "interim"; i.textContent = " " + interimText; tx.append(i); }
+  row.append(ts, tx); return row;
+}
+let rendered = 0;
+function renderLive(){
+  if (!session) return;
+  const box = $("transcript");
+  const empty = box.querySelector(".empty"); if (empty) empty.remove();
+  // re-render incremental: parágrafos completos + último (que ainda cresce)
+  while (box.children.length > Math.max(0, session.paras.length - 1)) box.lastChild.remove();
+  for (let i = box.children.length; i < session.paras.length; i++){
+    const isLast = i === session.paras.length - 1;
+    box.append(paraNode(session.paras[i], isLast ? interim : ""));
+  }
+  if (session.paras.length === 0 && interim) box.append(paraNode({t: elapsed(), text: ""}, interim));
+  $("wordCount").textContent = `${words(session)} palavras`;
+  const nearBottom = window.innerHeight + window.scrollY > document.body.scrollHeight - 200;
+  if (nearBottom) window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+}
+
+// ---------- histórico e detalhe ----------
+function show(view){
+  $("view-rec").hidden = view !== "rec";
+  $("view-hist").hidden = view !== "hist";
+  $("view-detail").hidden = view !== "detail";
+  $("tab-rec").setAttribute("aria-selected", view === "rec");
+  $("tab-hist").setAttribute("aria-selected", view !== "rec");
+  window.scrollTo(0, 0);
+}
+function renderHist(){
+  db = loadAll();
+  const list = $("histList"); list.innerHTML = "";
+  if (!db.sessions.length){ list.innerHTML = '<p class="empty">Nenhuma aula gravada ainda.</p>'; return; }
+  for (const s of db.sessions){
+    const c = document.createElement("button");
+    c.className = "card item"; c.style.textAlign = "left"; c.style.font = "inherit"; c.style.color = "inherit";
+    const h = document.createElement("h3"); h.textContent = sessionTitle(s);
+    const m = document.createElement("div"); m.className = "meta";
+    m.textContent = [fmtDate(s.startedAt), clock(s.durationMs), s.subject, `${words(s)} palavras`].filter(Boolean).join(" · ");
+    c.append(h, m);
+    c.onclick = () => openDetail(s.id);
+    list.append(c);
+  }
+}
+let current = null;
+function openDetail(id){
+  db = loadAll();
+  current = db.sessions.find(s => s.id === id);
+  if (!current) return;
+  $("dTitle").textContent = sessionTitle(current);
+  $("dMeta").textContent = [fmtDate(current.startedAt), clock(current.durationMs), current.subject, current.teacher, `${words(current)} palavras`].filter(Boolean).join(" · ");
+  const box = $("dTranscript"); box.innerHTML = "";
+  if (current.edited != null){
+    const pre = document.createElement("div"); pre.style.whiteSpace = "pre-wrap"; pre.textContent = current.edited; box.append(pre);
+  } else if (!current.paras.length){
+    box.innerHTML = '<p class="empty">Nada foi transcrito nesta gravação.</p>';
+  } else for (const p of current.paras) box.append(paraNode(p, ""));
+  $("dEditor").hidden = true; $("editActions").hidden = true; box.hidden = false;
+  $("delRow").hidden = false; $("delConfirm").hidden = true; $("copyInfo").hidden = true;
+  $("shareBtn").hidden = !navigator.share;
+  show("detail");
+}
+
+async function copyText(){
+  const text = toPlainText(current);
+  try{ await navigator.clipboard.writeText(text); $("copyInfo").textContent = "Copiado. Agora abra o AulaMind no Claude e cole."; }
+  catch{ $("copyInfo").textContent = "Não consegui copiar automaticamente. Toque em Editar, selecione todo o texto e copie."; }
+  $("copyInfo").hidden = false;
+}
+async function shareText(){
+  try{ await navigator.share({ title: sessionTitle(current), text: toPlainText(current) }); }
+  catch(e){ if (e && e.name !== "AbortError") copyText(); }
+}
+
+// ---------- eventos ----------
+$("recBtn").onclick = () => {
+  if (phase === "idle") startRecording();
+  else if (phase === "paused") resumeRecording();
+};
+$("pauseBtn").onclick = () => phase === "recording" ? pauseRecording(false) : resumeRecording();
+$("stopBtn").onclick = () => { $("liveControls").hidden = true; $("confirmStop").hidden = false; };
+$("keepBtn").onclick = () => { $("confirmStop").hidden = true; $("liveControls").hidden = false; };
+$("confirmStopBtn").onclick = finishRecording;
+$("tab-rec").onclick = () => show("rec");
+$("tab-hist").onclick = () => { renderHist(); show("hist"); };
+$("backBtn").onclick = () => { renderHist(); show("hist"); };
+$("copyBtn").onclick = copyText;
+$("shareBtn").onclick = shareText;
+$("editBtn").onclick = () => {
+  $("dEditor").value = bodyText(current);
+  $("dEditor").hidden = false; $("editActions").hidden = false; $("dTranscript").hidden = true;
+};
+$("cancelEditBtn").onclick = () => openDetail(current.id);
+$("saveEditBtn").onclick = () => { current.edited = $("dEditor").value; upsertSession(current); openDetail(current.id); };
+$("delBtn").onclick = () => { $("delRow").hidden = true; $("delConfirm").hidden = false; };
+$("delCancel").onclick = () => { $("delRow").hidden = false; $("delConfirm").hidden = true; };
+$("delYes").onclick = () => { db = loadAll(); db.sessions = db.sessions.filter(s => s.id !== current.id); saveAll(db); renderHist(); show("hist"); };
+
+// app em segundo plano: o iOS corta o microfone da página
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden){
+    if (phase === "recording"){ hiddenAt = Date.now(); pauseRecording(true); session && (session._pausedReason = "app fora da tela"); }
+  } else if (hiddenAt){
+    const secs = Math.round((Date.now() - hiddenAt)/1000); hiddenAt = null;
+    showAlert(`A gravação ficou parada por ${secs}s enquanto o app estava fora da tela. Toque em Continuar para retomar.`, "warn", "tap");
+    setState("Pausado — toque em Continuar", "warn");
+  }
+});
+window.addEventListener("beforeunload", (e) => { if (phase !== "idle"){ e.preventDefault(); e.returnValue = ""; } });
+
+// sessão que ficou aberta (app fechado no meio): já está salva; avisa
+(function recoverNotice(){
+  const s = db.sessions[0];
+  if (s && s.paras.length && s._pausedReason !== undefined){ delete s._pausedReason; saveAll(db); showAlert(`A aula "${sessionTitle(s)}" foi interrompida, mas o texto até ali está salvo em Aulas.`, "info"); }
+})();
+</script>
+</body>
+</html>
